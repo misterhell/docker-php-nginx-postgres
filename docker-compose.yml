@@ -1,0 +1,61 @@
+version: "3"
+services:
+  #Postgres service
+  db:
+    image: postgres
+    container_name: postgres
+    restart: always
+    volumes:
+      - ./postgresql-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: "q1w2e3"
+      # create bd on first start
+      POSTGRES_DB: "processing"
+    ports:
+      - 5432:5432
+
+  #Adminer service for db access
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+  #Node service
+  npm:
+    image: node:slim
+    volumes:
+      - ./:/var/www
+    working_dir: /var/www
+    command: bash -c "npm install && npm run dev"
+
+  #PHP Service
+  app:
+    build: docker/php
+    container_name: app
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    expose:
+      - 9000
+
+  #Nginx Service
+  webserver:
+    image: nginx:alpine
+    container_name: webserver
+    restart: unless-stopped
+    tty: true
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+
